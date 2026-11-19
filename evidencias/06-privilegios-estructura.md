@@ -1,0 +1,14 @@
+## Respuestas a las preguntas
+
+### 1. ¿Qué tipo de evento es cada una de las tres primeras sentencias (privilegio o estructura)?[cite: 67]
+* `REVOKE UPDATE ON clientes FROM soporte_ana;`: **Evento de privilegio**, ya que retira permisos de operación sobre un objeto de la base de datos[cite: 3, 22].
+* `GRANT UPDATE ON clientes TO app_ventas;`: **Evento de privilegio**, porque otorga permisos de acceso a un rol específico[cite: 3, 22].
+* `ALTER TABLE clientes ADD COLUMN segmento VARCHAR(20);`: **Evento de estructura**, debido a que modifica la definición física y el esquema de la tabla `clientes`[cite: 3, 22].
+
+### 2. ¿Por qué `GRANT` y `REVOKE` quedan registrados con `log_statement = 'ddl'`?[cite: 67]
+* En PostgreSQL, el nivel `log_statement = 'ddl'` incluye las sentencias de definición de datos (`CREATE`, `ALTER`, `DROP`) y también aquellas que modifican los metadatos y permisos de los objetos en los catálogos del sistema, como `GRANT`, `REVOKE` y `COMMENT`[cite: 5].
+* Esta agrupación permite auditar de forma conjunta todos los cambios estructurales y de control de acceso sin incurrir en el volumen de almacenamiento que implicaría registrar operaciones sobre datos (`mod`) o consultas de lectura (`all`)[cite: 5].
+
+### 3. Si la bitácora contiene contraseñas, ¿quién debería poder leerla? Relaciónalo con la gestión de secretos de la Unidad II.[cite: 67]
+* **Quién debería leerla:** Exclusivamente el administrador de la base de datos (superusuario, como `postgres`) o un rol de auditoría autorizado tras un análisis de riesgo[cite: 4, 16]. El acceso debe permanecer revocado para `PUBLIC` y denegado a aplicaciones o usuarios operativos (`app_ventas`, `soporte_ana`), tanto a nivel de permisos de archivo en el sistema operativo como en vistas SQL como `dba.bitacora` (que depende de `pg_read_file()`, restringida por defecto a superusuarios)[cite: 4, 16].
+* **Relación con la gestión de secretos (Unidad II):** En la Unidad II se establece que las credenciales nunca deben quedar expuestas en texto claro y deben manejarse mediante un gestor de secretos, el archivo `.pgpass` o el metacomando `\password` (que calcula el resumen `SCRAM-SHA-256` en el cliente antes de enviarlo al servidor)[cite: 9, 13, 23]. Cuando se ejecuta una sentencia SQL con una contraseña literal (`CREATE ROLE ... PASSWORD`), la bitácora guarda la clave en texto claro —y eliminar el rol no la borra del archivo—[cite: 22, 23], por lo que el registro pasa a comportarse como un almacén de secretos que exige resguardo estricto y limpieza (`<REDACTED>`) antes de exportarse o compartirse[cite: 8, 38, 47, 49].
